@@ -1,0 +1,4 @@
+#
+# Update dpkg package list file for this server nightly
+#
+1 3 * * * root /usr/bin/confcheck.py -p
