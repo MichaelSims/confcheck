@@ -125,12 +125,12 @@ def main():
             prompt += "server's fully qualified hostname, %s. Continue anyway [y/N]? " % hostname
             response = prompt_user(prompt, 'yN')
             if not response == 'y':
-                return 2
+                return FAILURE
 
     # Read checklist file
     if not os.path.isfile(checklist_file_path):
         print "Checklist file %s doesn't exist" % checklist_file_path
-        return 2
+        return FAILURE
 
     # Determine the relative path in the working copy that corresponds to the current
     # directory. Assume the base path is called "conf", and take only what comes after that.
