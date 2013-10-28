@@ -211,12 +211,12 @@ def update_package_list(hostname, working_copy_dir, username):
 
     # Add, commit, and push the file
     working_dir = "%s/conf" % current_host_dir
-    run_command('sudo -u %s sh -c "git add %s"' % (username, package_list_file), shell=True, cwd=working_dir)
-    commit_cmd = r'sudo -u %s sh -c "git commit -m \"Auto-commit by confcheck running on %s\""' % (username, hostname)
+    run_command('sudo -u %s sh -i -c "git add %s"' % (username, package_list_file), shell=True, cwd=working_dir)
+    commit_cmd = r'sudo -u %s sh -i -c "git commit -m \"Auto-commit by confcheck running on %s\""' % (username, hostname)
     run_command(commit_cmd, shell=True, cwd=working_dir, abort_on_failure=False)
     # Push regardless of whether the commit succeeded. This may seem odd, but it prevents us from getting in a
     # situation where something is committed from a previous run of the app but not pushed.
-    run_command('sudo -u %s sh -c "git push"' % username, shell=True, cwd=working_dir, abort_on_failure=False)
+    run_command('sudo -u %s sh -i -c "git push"' % username, shell=True, cwd=working_dir, abort_on_failure=False)
 
 
 def read_checklist(checklist_file_path):
