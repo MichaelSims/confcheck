@@ -210,10 +210,11 @@ def update_package_list(hostname, working_copy_dir, username):
     run_command(command, shell=True)
 
     # Add, commit, and push the file
-    run_command('sudo -u %s sh -c "git add %s"' % (username, package_list_file), shell=True)
+    working_dir = "%s/conf" % current_host_dir
+    run_command('sudo -u %s sh -c "git add %s"' % (username, package_list_file), shell=True, cwd=working_dir)
     run_command('sudo -u %s sh -c "git commit -m \"Auto-commit by confcheck running on %s\""' % (username, hostname),
-                shell=True)
-    run_command('sudo -u %s sh -c "git push"' % username, shell=True)
+                shell=True, cwd=working_dir)
+    run_command('sudo -u %s sh -c "git push"' % username, shell=True, cwd=working_dir)
 
 
 def read_checklist(checklist_file_path):
