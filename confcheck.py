@@ -59,6 +59,7 @@ import argparse
 import ConfigParser
 import os.path
 import logging
+import logging.handlers
 import subprocess
 import socket
 import re
@@ -68,6 +69,10 @@ import shutil
 SUCCESS = 0
 FAILURE = 2
 
+# TODO
+# Declare global logger. This is probably evil and unpythonic. Find a better way
+log = None
+
 
 def main():
     hostname = socket.gethostname()
@@ -76,6 +81,14 @@ def main():
     # Parse command line arguments and configure logging
     args = parse_command_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
+    global log
+    log = logging.getLogger(__name__)
+    try:
+        log.addHandler(logging.handlers.SysLogHandler(address='/dev/log'))
+    except socket.error:
+        log.debug("Syslog not found, logging to screen only")
+        # No syslog. We tried
+        pass
 
     # Validate and read config file
     if not os.path.isfile(args.config_path):
@@ -105,10 +118,10 @@ def main():
     # Checkout repo or update it if it already exists
     repo = is_git_repo(working_copy_dir)
     if repo:
-        logging.debug('%s is a git repo', working_copy_dir)
+        log.debug('%s is a git repo', working_copy_dir)
         run_command("sudo -u %s sh -c \"cd %s && git pull\"" % (username, working_copy_dir), shell=True)
     else:
-        logging.debug('%s is not a git repo', working_copy_dir)
+        log.debug('%s is not a git repo', working_copy_dir)
         run_command("sudo -u %s sh -c \"git clone %s %s\"" % (username, repo_url, working_copy_dir), shell=True)
 
     # Update package list for this server if option was passed
@@ -138,7 +151,7 @@ def main():
 
     # Process each file pair in checklist
     for source, target in read_checklist(checklist_file_path):
-        logging.debug("Source is %s, target is %s", source, target)
+        log.debug("Source is %s, target is %s", source, target)
 
         if not os.path.isfile(source):
             print "Config source file %s referenced in %s doesn't exist; " \
@@ -169,7 +182,7 @@ def main():
                 return FAILURE
 
             if run_command(['diff', '-q', file_path_in_working_copy, target], abort_on_failure=False):
-                logging.debug("%s is the same as git version, skipping", target)
+                log.debug("%s is the same as git version, skipping", target)
                 break  # File are the same, proceed
 
             prompt = "WARNING! Target file %s has been modified since last git checkin.\n" \
@@ -212,7 +225,8 @@ def update_package_list(hostname, working_copy_dir, username):
     # Add, commit, and push the file
     working_dir = "%s/conf" % current_host_dir
     run_command('sudo -u %s sh -i -c "git add %s"' % (username, package_list_file), shell=True, cwd=working_dir)
-    commit_cmd = r'sudo -u %s sh -i -c "git commit -m \"Auto-commit by confcheck running on %s\""' % (username, hostname)
+    commit_cmd = r'sudo -u %s sh -i -c "git commit -m \"Auto-commit by confcheck running on %s\""' \
+                 % (username, hostname)
     run_command(commit_cmd, shell=True, cwd=working_dir, abort_on_failure=False)
     # Push regardless of whether the commit succeeded. This may seem odd, but it prevents us from getting in a
     # situation where something is committed from a previous run of the app but not pushed.
@@ -294,7 +308,7 @@ def run_command(*args, **kwargs):
     # Log command
     command_parts = args[0] if type(args[0]) is list else list(args)
     command_str = " ".join(command_parts)
-    logging.debug("Running command '%s' with keyword args %s (CWD: %s)", command_str, kwargs, os.getcwd())
+    log.debug("Running command '%s' with keyword args %s (CWD: %s)", command_str, kwargs, os.getcwd())
 
     # Run command and grab stdout, stderr, and return code
     process = subprocess.Popen(*args, **kwargs)
@@ -309,7 +323,7 @@ def run_command(*args, **kwargs):
     was_successful = return_code == 0
     if not was_successful:
         error_msg = "Command '%s' failed, return value was %s"
-        logging.debug(error_msg, command_str, return_code)
+        log.debug(error_msg, command_str, return_code)
         if abort_on_failure:
             print error_msg % (command_str, return_code)
             dump_output(error_output, output)
