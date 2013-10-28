@@ -70,6 +70,10 @@ SUCCESS = 0
 FAILURE = 2
 
 # TODO
+# General script cleanup. This is still based mostly on the old perl version and could be made simpler.
+# Also check the huge documentation at the top
+
+# TODO
 # Declare global logger. This is probably evil and unpythonic. Find a better way
 log = None
 
